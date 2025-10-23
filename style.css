@@ -337,7 +337,7 @@ body {
 
 /* Container - Set to 50% width, keep height */
 .container {
-  width: 30%;
+  width: 40%;
   max-width: 550px; /* Optional cap to prevent too wide on large screens */
   height: 100vh;
   padding: 1rem;

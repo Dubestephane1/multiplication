@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Multiplication Tables for Kids</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fira+Code:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+
+</head>
+<body>
+  <video autoplay muted loop id="bg-video">
+    <source src="tiny.mp4" type="video/mp4">
+  </video>
+  <div class="container">
+    <h1>Multiplication Practice</h1>
+    <div id="high-score" class="high-score">
+      <h3>🏆 High Score</h3>
+      <div id="high-score-display">No high score yet!</div>
+    </div>
+    
+    <div class="controls">
+      <label for="table-select">Choose a table:</label>
+      <select id="table-select">
+        <option value="all">All Tables (1-10)</option>
+        <option value="1">Table of 1</option>
+        <option value="2">Table of 2</option>
+        <option value="3">Table of 3</option>
+        <option value="4">Table of 4</option>
+        <option value="5">Table of 5</option>
+        <option value="6">Table of 6</option>
+        <option value="7">Table of 7</option>
+        <option value="8">Table of 8</option>
+        <option value="9">Table of 9</option>
+        <option value="10">Table of 10</option>
+      </select>
+      <button id="start-btn" class="primary">Start Practice</button>
+    </div>
+    <h2 id="table-title" style="display: none;"></h2>
+    <div id="progress" style="display: none;"></div>
+    <div class="score-counter">
+      <div>✅ <span id="correct-count">0</span> correct</div>
+      <div>❌ <span id="incorrect-count">0</span> incorrect</div>
+    </div>
+    <div id="table-container"></div>
+    <div class="button-group">
+      <button id="menu-btn" class="secondary">Main Menu</button>
+      <button id="check-btn">Check Answers</button>
+      <button id="next-btn" style="display:none;">Next Table</button>
+      
+    </div>
+  </div>
+
+<script src="my_script.js"></script>
+
+</body>
+</html>

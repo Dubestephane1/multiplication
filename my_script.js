@@ -1,13 +1,9 @@
-let currentTable = 1;
-let practiceMode = 'all'; // 'all' or 'single'
-let tablesToPractice = [];
-let currentTableIndex = 0;
-let score = { correct: 0, incorrect: 0 };
-let highScore = {
-  score: 0,
-  name: '',
-  country: '',
-  date: ''
+const state = {
+  currentTable: 1,
+  practiceMode: 'all',
+  tablesToPractice: [],
+  currentTableIndex: 0,
+  score: { correct: 0, incorrect: 0 }
 };
 
 const tableContainer = document.getElementById('table-container');
@@ -23,9 +19,11 @@ const incorrectCountElement = document.getElementById('incorrect-count');
 const controlsElement = document.querySelector('.controls');
 
 function loadTable(n) {
-  currentTable = n;
+  state.currentTable = n;
   title.textContent = `Table of ${n}`;
   tableContainer.innerHTML = '';
+  
+  const fragment = document.createDocumentFragment();
   for (let i = 1; i <= 10; i++) {
     const row = document.createElement('div');
     row.classList.add('table-row');
@@ -33,16 +31,15 @@ function loadTable(n) {
       <span>${n} × ${i} =</span>
       <input type="number" min="0" class="answer-input" />
     `;
-    tableContainer.appendChild(row);
+    fragment.appendChild(row);
   }
+  tableContainer.appendChild(fragment);
   
-  // Focus the first input
   const firstInput = tableContainer.querySelector('input');
   if (firstInput) firstInput.focus();
   
-  // Update progress
-  if (practiceMode === 'all') {
-    progressElement.textContent = `Table ${currentTableIndex + 1} of ${tablesToPractice.length}`;
+  if (state.practiceMode === 'all') {
+    progressElement.textContent = `Table ${state.currentTableIndex + 1} of ${state.tablesToPractice.length}`;
   } else {
     progressElement.textContent = '';
   }
@@ -50,7 +47,6 @@ function loadTable(n) {
   checkBtn.style.display = 'inline-block';
   nextBtn.style.display = 'none';
   
-  // Reset all inputs
   const inputs = tableContainer.querySelectorAll('input');
   inputs.forEach(input => {
     input.value = '';
@@ -59,39 +55,40 @@ function loadTable(n) {
 }
 
 function updateScoreDisplay() {
-  correctCountElement.textContent = score.correct;
-  incorrectCountElement.textContent = score.incorrect;
+  correctCountElement.textContent = state.score.correct;
+  incorrectCountElement.textContent = state.score.incorrect;
+}
+
+function resetScore() {
+  state.score = { correct: 0, incorrect: 0 };
+  updateScoreDisplay();
 }
 
 function checkAnswers() {
-  const inputs = tableContainer.querySelectorAll('input');
+  const inputs = tableContainer.querySelectorAll('input:not([disabled])');
+  if (inputs.length === 0) return;
+
   let allCorrect = true;
-  let allFilled = true;
   let correctInThisCheck = 0;
   let incorrectInThisCheck = 0;
 
-  // Check if all inputs are filled
-  inputs.forEach(input => {
-    if (input.value.trim() === '') {
-      allFilled = false;
-      return;
-    }
-  });
+  const allFilled = Array.from(inputs).every(input => input.value.trim() !== '');
 
   if (!allFilled) {
-    alert('Please fill in all the answers before checking!');
+    showMessageModal('Please fill in all the answers first! 📝');
     return;
   }
 
-  // Check answers
-  inputs.forEach((input, i) => {
-    const correctAnswer = currentTable * (i + 1);
+  const allInputs = tableContainer.querySelectorAll('input');
+  allInputs.forEach((input, i) => {
+    if (input.disabled) return;
+
+    const correctAnswer = state.currentTable * (i + 1);
     if (parseInt(input.value) === correctAnswer) {
-      if (!input.classList.contains('correct')) {
-        correctInThisCheck++;
-      }
+      correctInThisCheck++;
       input.classList.add('correct');
       input.classList.remove('wrong');
+      input.disabled = true; // Prevent double-scoring
     } else {
       if (!input.classList.contains('wrong')) {
         incorrectInThisCheck++;
@@ -102,23 +99,25 @@ function checkAnswers() {
     }
   });
 
-  // Update score
-  score.correct += correctInThisCheck;
-  score.incorrect += incorrectInThisCheck;
+  state.score.correct += correctInThisCheck;
+  state.score.incorrect += incorrectInThisCheck;
   updateScoreDisplay();
 
-  if (allCorrect) {
+  const totalInputs = allInputs.length;
+  const disabledInputs = tableContainer.querySelectorAll('input[disabled]').length;
+
+  if (disabledInputs === totalInputs) {
+    celebrateTableCompletion();
     checkBtn.style.display = 'none';
-    if (practiceMode === 'all' && currentTableIndex < tablesToPractice.length - 1) {
-      nextBtn.textContent = 'Next Table';
-    } else if (practiceMode === 'single') {
-      nextBtn.textContent = 'Try Again';
+    if (state.practiceMode === 'all' && state.currentTableIndex < state.tablesToPractice.length - 1) {
+      nextBtn.textContent = 'Next Table 🎯';
+    } else if (state.practiceMode === 'single') {
+      nextBtn.textContent = 'Try Again 🔄';
     } else {
-      nextBtn.textContent = 'All Done!';
+      nextBtn.textContent = 'All Done! 🌟';
     }
     nextBtn.style.display = 'inline-block';
   } else {
-    // Scroll to the first wrong answer
     const firstWrong = tableContainer.querySelector('.wrong');
     if (firstWrong) {
       firstWrong.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -126,71 +125,99 @@ function checkAnswers() {
   }
 }
 
+function celebrateTableCompletion() {
+  const tableRows = document.querySelectorAll('.table-row');
+  tableRows.forEach((row, index) => {
+    setTimeout(() => {
+      row.classList.add('celebrate');
+      setTimeout(() => row.classList.remove('celebrate'), 500);
+    }, index * 50);
+  });
+}
+
+function showMessageModal(message) {
+  const existingModal = document.querySelector('.modal-overlay');
+  if (existingModal) existingModal.remove();
+
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal-content">
+      <p>${message}</p>
+      <button class="modal-btn">OK 👍</button>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  
+  overlay.querySelector('.modal-btn').addEventListener('click', () => overlay.remove());
+}
+
 function nextTable() {
-  if (practiceMode === 'all') {
-    currentTableIndex++;
-    if (currentTableIndex < tablesToPractice.length) {
-      loadTable(tablesToPractice[currentTableIndex]);
+  if (state.practiceMode === 'all') {
+    state.currentTableIndex++;
+    if (state.currentTableIndex < state.tablesToPractice.length) {
+      loadTable(state.tablesToPractice[state.currentTableIndex]);
     } else {
       showCompletionMessage();
     }
   } else {
-    // In single table mode, just reload the same table
-    loadTable(currentTable);
+    loadTable(state.currentTable);
   }
 }
 
 function showCompletionMessage() {
+  resetScore();
+  
   tableContainer.innerHTML = `
     <div class="completion-message">
-      <h3>🎉 Great job!</h3>
+      <div class="completion-emoji">🎉</div>
+      <h3>Amazing Job!</h3>
       <p>You've completed all the tables you selected!</p>
-      <button id="restart-btn">Practice Again</button>
+      <button id="restart-btn" class="primary">Play Again 🎮</button>
+      <button id="menu-btn-completion" class="secondary">Main Menu 🏠</button>
     </div>
   `;
   title.textContent = 'Well done!';
   checkBtn.style.display = 'none';
   nextBtn.style.display = 'none';
   
-  // Add event listener for the restart button
   document.getElementById('restart-btn').addEventListener('click', startPractice);
+  document.getElementById('menu-btn-completion').addEventListener('click', () => {
+    tableContainer.style.display = 'none';
+    showMainMenu();
+  });
 }
 
 function startPractice() {
   const selectedValue = tableSelect.value;
   
-  // Only reset score if it's a new practice session (score is 0)
-  if (score.correct === 0 && score.incorrect === 0) {
-    score = { correct: 0, incorrect: 0 };
-    updateScoreDisplay();
-  }
+  resetScore();
   
   if (selectedValue === 'all') {
-    practiceMode = 'all';
-    // Create array of all tables in order from 1 to 10
-    tablesToPractice = Array.from({length: 10}, (_, i) => i + 1);
-    currentTableIndex = 0;
-    loadTable(tablesToPractice[0]);
+    state.practiceMode = 'all';
+    state.tablesToPractice = Array.from({length: 10}, (_, i) => i + 1);
+    state.currentTableIndex = 0;
+    loadTable(state.tablesToPractice[0]);
   } else {
-    practiceMode = 'single';
-    currentTable = parseInt(selectedValue);
-    loadTable(currentTable);
+    state.practiceMode = 'single';
+    state.currentTable = parseInt(selectedValue);
+    loadTable(state.currentTable);
   }
   
-    // Show the practice area and hide the controls
   showPracticeArea();
 }
 
-// Show/hide high score button removed - high score is now always visible on main page
-
-// Event Listeners
 checkBtn.addEventListener('click', checkAnswers);
 nextBtn.addEventListener('click', nextTable);
-startBtn.addEventListener('click', startPractice);
 
-// Allow pressing Enter to check answers
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') {
+    const modal = document.querySelector('.modal-overlay');
+    if (modal) {
+      const btn = modal.querySelector('.modal-btn:not(.secondary)');
+      if (btn) btn.click();
+      return;
+    }
     if (checkBtn.style.display !== 'none') {
       checkAnswers();
     } else if (nextBtn.style.display !== 'none') {
@@ -199,9 +226,6 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-// Initially hide the practice area, score counter, and menu button
-// Make sure high score is visible on main page
-document.getElementById('high-score').style.display = 'block';
 tableContainer.style.display = 'none';
 checkBtn.style.display = 'none';
 nextBtn.style.display = 'none';
@@ -210,12 +234,11 @@ document.querySelector('.score-counter').style.display = 'none';
 title.style.display = 'none';
 progressElement.style.display = 'none';
 
-// Show practice area and setup
 function showPracticeArea() {
   controlsElement.style.display = 'none';
-  tableContainer.style.display = 'block';
+  tableContainer.style.display = 'flex';
   document.querySelector('.score-counter').style.display = 'flex';
-  document.getElementById('high-score').style.display = 'none'; // Hide high score
+  document.querySelector('.button-group').style.display = 'flex';
   checkBtn.style.display = 'inline-block';
   nextBtn.style.display = 'none';
   menuBtn.style.display = 'inline-block';
@@ -223,88 +246,27 @@ function showPracticeArea() {
   progressElement.style.display = 'block';
 }
 
-// Load high score from localStorage
-function loadHighScore() {
-  const savedHighScore = localStorage.getItem('multiplicationHighScore');
-  if (savedHighScore) {
-    highScore = JSON.parse(savedHighScore);
-    updateHighScoreDisplay();
-  }
-}
-
-// Save high score to localStorage
-function saveHighScore() {
-  localStorage.setItem('multiplicationHighScore', JSON.stringify(highScore));
-  updateHighScoreDisplay();
-}
-
-// Update high score display
-function updateHighScoreDisplay() {
-  const highScoreDisplay = document.getElementById('high-score-display');
-  if (highScore.score > 0) {
-    const date = new Date(highScore.date);
-    const formattedDate = `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}`;
-    
-    highScoreDisplay.innerHTML = `
-      <div>${highScore.score} correct answers</div>
-      <div>By ${highScore.name} from ${highScore.country}</div>
-      <div class="high-score-date">${formattedDate}</div>
-    `;
-  } else {
-    highScoreDisplay.textContent = 'No high score yet!';
-  }
-}
-
-// Check and update high score
-function checkHighScore() {
-  if (score.correct > highScore.score) {
-    const name = prompt('New High Score! Enter your name:');
-    if (name) {
-      const country = prompt('Enter your country:') || 'Unknown';
-      highScore = {
-        score: score.correct,
-        name: name.trim(),
-        country: country.trim(),
-        date: new Date().toISOString()
-      };
-      saveHighScore();
-      return true;
-    }
-  }
-  return false;
-}
-
-// Show main menu
 function showMainMenu() {
-  // Don't check high score when just switching tables
-  // Only check when finishing a practice session
-  if (score.correct > 0 && (practiceMode === 'all' || confirm('End this practice session and check for high score?'))) {
-    checkHighScore();
-  }
-  
   controlsElement.style.display = 'flex';
   tableContainer.style.display = 'none';
   document.querySelector('.score-counter').style.display = 'none';
-  document.getElementById('high-score').style.display = 'block'; // Always show high score on main page
+  document.querySelector('.button-group').style.display = 'none';
   checkBtn.style.display = 'none';
   nextBtn.style.display = 'none';
   menuBtn.style.display = 'none';
   title.style.display = 'none';
   progressElement.style.display = 'none';
   
-  // Update high score display
-  updateHighScoreDisplay();
+  resetScore();
 }
 
-// Reset high score functionality removed
-
-// Source code button functionality removed
-
-// Initialize high score on page load
 document.addEventListener('DOMContentLoaded', () => {
-  loadHighScore();
 });
 
-// Event Listeners
-startBtn.addEventListener('click', showPracticeArea);
-menuBtn.addEventListener('click', showMainMenu);
+startBtn.addEventListener('click', () => {
+  startPractice();
+});
+
+menuBtn.addEventListener('click', () => {
+  showMainMenu();
+});
